@@ -6,6 +6,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import authRoutes from './routes/auth.route.js';
 import config from './config/config.js';
+import cors from 'cors';
 
 const app = express();
 
@@ -14,6 +15,12 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors(
+  {
+    origin: 'http://localhost:5174'|| 'http://localhost:5173', // 👉 adjust to your client URL
+    credentials: true,
+  }
+));
 
 // 🔹 Add express-session middleware BEFORE passport.session()
 app.use(

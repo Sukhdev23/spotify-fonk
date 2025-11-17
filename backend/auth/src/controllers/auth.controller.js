@@ -62,6 +62,42 @@ export const register = async (req, res) => {
   }
 };
 
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await usermodel.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    } 
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    } 
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      config.jwtSecret,
+      { expiresIn: "2d" }
+    );
+
+    res.cookie("token", token);
+
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        email: user.email,
+        fullName: user.fullName.firstName,
+        lastName: user.fullName.lastName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 export const googleAuthCallback = async (req, res) => {
   try {
     // Successful authentication, generate a JWT for the user
@@ -87,14 +123,7 @@ export const googleAuthCallback = async (req, res) => {
         role: isUserAlreadyExists.role,
       });
       res.cookie("token", token);
-      return res.status(200).send("Google authentication successful", {
-        user: {
-          id: isUserAlreadyExists._id,
-          email: isUserAlreadyExists.email,
-          fullName: isUserAlreadyExists.fullName,
-          role: isUserAlreadyExists.role,
-        },
-      });
+      return res.redirect("http://localhost:5173");
     }
     if (!isUserAlreadyExists) {
       // New user, create an account
@@ -116,16 +145,7 @@ export const googleAuthCallback = async (req, res) => {
 
       await newUser.save();
 
-      return res.status(201).json({
-        message: "User registered successfully via Google",
-        user: {
-          id: newUser._id,
-          email: newUser.email,
-          fullName: newUser.fullName.firstName,
-          lastName: newUser.fullName.lastName,
-          role: newUser.role,
-        },
-      });
+      return res.redirect("http://localhost:5173");
     }
   } catch (error) {
     console.error(error);
